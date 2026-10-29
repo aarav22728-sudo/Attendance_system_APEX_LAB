@@ -32,7 +32,7 @@ An intelligent, self-contained face recognition attendance kiosk designed and op
 ```mermaid
 flowchart TD
     subgraph INGESTION ["📷 Video Ingestion"]
-        CAM["USB UVC Webcam<br/>(Logitech C270 / C920 @ 30 FPS)"]
+        CAM["USB UVC Webcam<br/>(Logitech BRIO 100)"]
         CAP["CameraManager<br/>(Background Thread Capture)"]
         CAM --> CAP
     end
