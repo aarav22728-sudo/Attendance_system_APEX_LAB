@@ -21,7 +21,7 @@ import config
 
 import numpy as np
 
-from database.models import AttendanceRecord, FaceEncoding, Person
+from database.models import AttendanceRecord, Person
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +107,7 @@ class DatabaseManager:
                 )
                 """
             )
+        self._migrate_visitor_columns()
         logger.debug("Tables verified / created.")
 
     # ------------------------------------------------------------------
@@ -314,6 +315,76 @@ class DatabaseManager:
     # ------------------------------------------------------------------
     # Cleanup
     # ------------------------------------------------------------------
+    def _migrate_visitor_columns(self) -> None:
+        """Add visitor columns to databases created before this version."""
+        with self.connection() as conn:
+            existing = {row[1] for row in conn.execute("PRAGMA table_info(attendance_log)")}
+            if "visitor_name" not in existing:
+                conn.execute("ALTER TABLE attendance_log ADD COLUMN visitor_name TEXT")
+            if "purpose" not in existing:
+                conn.execute("ALTER TABLE attendance_log ADD COLUMN purpose TEXT")
+
+    def log_visitor(self, name: str, purpose: str, snapshot_path: Optional[str] = None) -> int:
+        """Record a temporary visitor with their name and purpose of visit."""
+        ts = datetime.datetime.now().isoformat()
+        with self.connection() as conn:
+            cursor = conn.execute(
+                """
+                INSERT INTO attendance_log
+                    (person_id, timestamp, status, confidence, snapshot_path, visitor_name, purpose)
+                VALUES (NULL, ?, 'visitor', 0.0, ?, ?, ?)
+                """,
+                (ts, snapshot_path, name, purpose),
+            )
+            record_id = cursor.lastrowid
+        logger.info("Logged visitor id=%d name=%s", record_id, name)
+        return record_id
+
+    def get_day_rows(self, date: str) -> List[tuple]:
+        """Raw attendance rows for one day, used by the daily sheet."""
+        with self.connection() as conn:
+            return conn.execute(
+                """
+                SELECT a.id, a.person_id, p.name, p.role, a.timestamp, a.status,
+                       a.confidence, a.snapshot_path, a.visitor_name, a.purpose
+                FROM attendance_log a
+                LEFT JOIN persons p ON p.id = a.person_id
+                WHERE date(a.timestamp) = date(?)
+                ORDER BY a.timestamp
+                """,
+                (date,),
+            ).fetchall()
+
+    def list_entries_for_day(self, date: str) -> List[tuple]:
+        """Rows for one day, for the Manage Records screen."""
+        with self.connection() as conn:
+            return conn.execute(
+                """
+                SELECT a.id, a.timestamp, a.status, p.name, a.visitor_name, a.purpose, a.snapshot_path
+                FROM attendance_log a
+                LEFT JOIN persons p ON p.id = a.person_id
+                WHERE date(a.timestamp) = date(?)
+                ORDER BY a.timestamp
+                """,
+                (date,),
+            ).fetchall()
+
+    def delete_entries(self, ids: List[int]) -> None:
+        """Delete attendance rows by id."""
+        if not ids:
+            return
+        marks = ",".join("?" for _ in ids)
+        with self.connection() as conn:
+            conn.execute(f"DELETE FROM attendance_log WHERE id IN ({marks})", list(ids))
+        logger.info("Deleted %d attendance entr(y/ies)", len(ids))
+
+    def deactivate_person(self, person_id: int) -> None:
+        """Stop recognising a person: remove their face data, keep their past records."""
+        with self.connection() as conn:
+            conn.execute("DELETE FROM face_encodings WHERE person_id = ?", (person_id,))
+            conn.execute("UPDATE persons SET is_active = 0 WHERE id = ?", (person_id,))
+        logger.info("Deactivated person id=%d and removed face data", person_id)
+
     def close(self) -> None:
         """Close the underlying SQLite connection."""
         self._conn.close()

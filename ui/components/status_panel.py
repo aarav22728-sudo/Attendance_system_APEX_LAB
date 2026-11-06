@@ -6,14 +6,11 @@ last recognized subject card, and live check-in telemetry.
 
 import sys
 import logging
-from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
 
 import customtkinter as ctk
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-import config
 from ui.themes import glassmorphism as theme
 
 logger = logging.getLogger(__name__)
@@ -218,7 +215,7 @@ class StatusPanel(ctk.CTkFrame):
 
         btn_enroll = ctk.CTkButton(
             action_frame,
-            text="➕ Register Face",
+            text="+ Register Face",
             font=theme.get_font(12, "bold"),
             fg_color=theme.COLOR_ACCENT_PRIMARY,
             hover_color="#2563EB",
@@ -230,7 +227,7 @@ class StatusPanel(ctk.CTkFrame):
 
         btn_report = ctk.CTkButton(
             action_frame,
-            text="📊 Export Excel Report",
+            text="Export Excel Report",
             font=theme.get_font(12, "normal"),
             fg_color=theme.COLOR_BG_CARD,
             hover_color=theme.COLOR_BG_CARD_HOVER,
@@ -260,11 +257,11 @@ class StatusPanel(ctk.CTkFrame):
         self._timestamp_lbl.configure(text=f"TIME: {timestamp}")
 
         if status == "checked_in":
-            pill_text = f"✔ CHECKED IN ({int(confidence * 100)}%)"
+            pill_text = "CHECKED IN"
         elif status == "already_in":
-            pill_text = "ℹ ALREADY CHECKED IN"
+            pill_text = "ALREADY CHECKED IN"
         elif status == "unknown":
-            pill_text = "⚠ UNREGISTERED PERSON"
+            pill_text = "UNREGISTERED PERSON"
         else:
             pill_text = status.upper()
 

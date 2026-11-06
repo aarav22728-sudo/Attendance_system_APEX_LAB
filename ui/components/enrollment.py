@@ -69,7 +69,7 @@ class EnrollmentDialog(ctk.CTkToplevel):
         # Header
         ctk.CTkLabel(
             container,
-            text="👤 NEW PERSONNEL REGISTRATION",
+            text="NEW PERSONNEL REGISTRATION",
             font=theme.get_font(18, "bold"),
             text_color=theme.COLOR_TEXT_PRIMARY,
         ).pack(pady=(16, 4))
@@ -157,7 +157,7 @@ class EnrollmentDialog(ctk.CTkToplevel):
 
         self._btn_capture = ctk.CTkButton(
             btn_box,
-            text="📸 Capture Angle",
+            text="Capture Angle",
             font=theme.get_font(13, "bold"),
             fg_color=theme.COLOR_ACCENT_PRIMARY,
             hover_color="#2563EB",
@@ -169,11 +169,12 @@ class EnrollmentDialog(ctk.CTkToplevel):
 
         self._btn_save = ctk.CTkButton(
             btn_box,
-            text="💾 Save & Register",
+            text="Save & Register",
             font=theme.get_font(13, "bold"),
             fg_color=theme.COLOR_ACCENT_SUCCESS,
             hover_color="#059669",
             state="disabled",
+            text_color_disabled="#E5E7EB",
             corner_radius=8,
             height=38,
             command=self._save_person,
@@ -194,41 +195,40 @@ class EnrollmentDialog(ctk.CTkToplevel):
         btn_cancel.pack(side="left", padx=4)
 
     def _update_preview(self):
-        """Draw live preview with detected face box."""
+        """Draw live preview. Face detection runs every 4th tick to keep the Pi responsive."""
         if not self._is_running:
             return
 
+        self._preview_tick = getattr(self, "_preview_tick", 0) + 1
         ok, frame = self._camera.read_frame()
-        if ok and frame is not None:
-            display_frame = frame.copy()
-            # Fast face detection on half-scale
+
+        if not ok or frame is None:
+            logger.warning("Enrollment preview: no frame from camera (ok=%s)", ok)
+            self._preview_label.configure(image=None, text="Camera not available.\nCheck the webcam connection.")
+            self.after(200, self._update_preview)
+            return
+
+        display_frame = frame.copy()
+        if self._preview_tick % 4 == 0:
             small_rgb = cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), (0, 0), fx=0.5, fy=0.5)
-            locations = self._detector.detect_faces(small_rgb)
+            self._last_locations = self._detector.detect_faces(small_rgb)
 
-            # Draw green guide box if face found
-            for top, right, bottom, left in locations:
-                top, right, bottom, left = top * 2, right * 2, bottom * 2, left * 2
-                cv2.rectangle(display_frame, (left, top), (right, bottom), (80, 220, 100), 2)
-                cv2.putText(
-                    display_frame,
-                    "FACE DETECTED",
-                    (left, max(20, top - 8)),
-                    cv2.FONT_HERSHEY_DUPLEX,
-                    0.5,
-                    (80, 220, 100),
-                    1,
-                    cv2.LINE_AA,
-                )
+        for top, right, bottom, left in getattr(self, "_last_locations", []):
+            top, right, bottom, left = top * 2, right * 2, bottom * 2, left * 2
+            cv2.rectangle(display_frame, (left, top), (right, bottom), (80, 220, 100), 2)
+            cv2.putText(
+                display_frame, "FACE DETECTED", (left, max(20, top - 8)),
+                cv2.FONT_HERSHEY_DUPLEX, 0.5, (80, 220, 100), 1, cv2.LINE_AA,
+            )
 
-            # Resize to fit preview viewport
-            rgb_display = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
-            h, w, _ = rgb_display.shape
-            scale = min(500 / w, 340 / h)
-            nw, nh = int(w * scale), int(h * scale)
-            resized = cv2.resize(rgb_display, (nw, nh), interpolation=cv2.INTER_LINEAR)
-            pil_img = Image.fromarray(resized)
-            ctk_img = ctk.CTkImage(light_image=pil_img, dark_image=pil_img, size=(nw, nh))
-            self._preview_label.configure(image=ctk_img, text="")
+        rgb_display = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
+        h, w, _ = rgb_display.shape
+        scale = min(500 / w, 340 / h)
+        nw, nh = int(w * scale), int(h * scale)
+        resized = cv2.resize(rgb_display, (nw, nh), interpolation=cv2.INTER_LINEAR)
+        pil_img = Image.fromarray(resized)
+        ctk_img = ctk.CTkImage(light_image=pil_img, dark_image=pil_img, size=(nw, nh))
+        self._preview_label.configure(image=ctk_img, text="")
 
         self.after(40, self._update_preview)
 
@@ -236,7 +236,7 @@ class EnrollmentDialog(ctk.CTkToplevel):
         """Capture current face frame and extract 128-D encoding."""
         ok, frame = self._camera.read_frame()
         if not ok or frame is None:
-            self._msg_label.configure(text="⚠️ Camera read failed. Try again.", text_color=theme.COLOR_ACCENT_DANGER)
+            self._msg_label.configure(text="Camera read failed. Try again.", text_color=theme.COLOR_ACCENT_DANGER)
             return
 
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -244,14 +244,14 @@ class EnrollmentDialog(ctk.CTkToplevel):
 
         if not locations:
             self._msg_label.configure(
-                text="⚠️ No face detected. Look directly at camera and ensure good lighting.",
+                text="No face detected. Look directly at camera and ensure good lighting.",
                 text_color=theme.COLOR_ACCENT_WARNING,
             )
             return
 
         encodings = self._detector.extract_encodings(rgb_frame, locations)
         if not encodings:
-            self._msg_label.configure(text="⚠️ Could not compute face encoding. Please try again.", text_color=theme.COLOR_ACCENT_WARNING)
+            self._msg_label.configure(text="Could not compute face encoding. Please try again.", text_color=theme.COLOR_ACCENT_WARNING)
             return
 
         # Take first detected face
@@ -265,7 +265,7 @@ class EnrollmentDialog(ctk.CTkToplevel):
         )
 
         self._msg_label.configure(
-            text=f"✔ Angle {count} captured successfully! Move slightly for next angle.",
+            text=f"Angle {count} captured successfully! Move slightly for next angle.",
             text_color=theme.COLOR_ACCENT_SUCCESS,
         )
 
@@ -280,12 +280,12 @@ class EnrollmentDialog(ctk.CTkToplevel):
         role = self._role_combo.get().strip()
 
         if not name:
-            self._msg_label.configure(text="⚠️ Please enter the person's full name.", text_color=theme.COLOR_ACCENT_DANGER)
+            self._msg_label.configure(text="Please enter the person's full name.", text_color=theme.COLOR_ACCENT_DANGER)
             self._entry_name.focus()
             return
 
         if len(self._captured_encodings) < 1:
-            self._msg_label.configure(text="⚠️ At least 1 capture required.", text_color=theme.COLOR_ACCENT_DANGER)
+            self._msg_label.configure(text="At least 1 capture required.", text_color=theme.COLOR_ACCENT_DANGER)
             return
 
         # Save reference photo

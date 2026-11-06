@@ -6,8 +6,7 @@ Dataclass definitions for Person, FaceEncoding, and AttendanceRecord.
 
 from __future__ import annotations
 
-import datetime
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from typing import Optional
 
 import numpy as np

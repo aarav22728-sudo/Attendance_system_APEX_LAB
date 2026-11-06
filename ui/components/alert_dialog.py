@@ -13,7 +13,6 @@ from PIL import Image
 import customtkinter as ctk
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-import config
 from ui.themes import glassmorphism as theme
 
 logger = logging.getLogger(__name__)
@@ -59,7 +58,7 @@ class AlertDialog(ctk.CTkToplevel):
         # Alert header
         ctk.CTkLabel(
             border_frame,
-            text="⚠️ UNKNOWN PERSON DETECTED",
+            text="UNKNOWN PERSON DETECTED",
             font=theme.get_font(16, "bold"),
             text_color=theme.COLOR_ACCENT_DANGER,
         ).pack(pady=(16, 4))
@@ -114,7 +113,7 @@ class AlertDialog(ctk.CTkToplevel):
 
         btn_enroll = ctk.CTkButton(
             btn_box,
-            text="👤 Register Person Now",
+            text="Register Person Now",
             font=theme.get_font(12, "bold"),
             fg_color=theme.COLOR_ACCENT_SUCCESS,
             hover_color="#059669",
@@ -126,7 +125,7 @@ class AlertDialog(ctk.CTkToplevel):
 
         btn_visitor = ctk.CTkButton(
             btn_box,
-            text="🏷️ Log as Temporary Visitor",
+            text="Log as Temporary Visitor",
             font=theme.get_font(12, "normal"),
             fg_color=theme.COLOR_BG_CARD,
             hover_color=theme.COLOR_BG_CARD_HOVER,

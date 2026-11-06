@@ -3,7 +3,6 @@ APEX LAB Attendance System — Configuration
 All tuneable constants live here. Adjust for your environment.
 """
 
-import os
 from pathlib import Path
 
 # ──────────────────────────────────────────────
@@ -45,13 +44,13 @@ RECOGNITION_INTERVAL = 3          # Process every Nth frame for recognition
 # ──────────────────────────────────────────────
 DUPLICATE_WINDOW_MINUTES = 30     # Minutes before same person can re-check-in
 EXPECTED_CHECKIN_TIME = "09:00"   # HH:MM — for late arrival tracking
-WORK_DAYS = [0, 1, 2, 3, 4]      # Monday=0 through Friday=4
+WORK_DAYS = [0, 1, 2, 3, 4, 5]     # Monday=0 through Saturday=5
 ABSENT_FLAG_DAYS = 3              # Flag person missing this many consecutive days
 
 # ──────────────────────────────────────────────
 # Excel Reports
 # ──────────────────────────────────────────────
-REPORT_DAY = "sunday"             # Day to auto-generate weekly report
+REPORT_DAY = "saturday"             # Day to auto-generate weekly report
 REPORT_TIME = "23:59"             # Time to generate report
 REPORT_FILENAME_FORMAT = "APEX_LAB_attendance_{start}_{end}.xlsx"
 
@@ -86,3 +85,12 @@ SOUND_ENROLLED = BASE_DIR / "assets" / "sounds" / "enrolled.wav"
 LOG_LEVEL = "INFO"
 LOG_FILE = BASE_DIR / "logs" / "apex_lab.log"
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+# ──────────────────────────────────────────────
+# Storage & Daily Sheet
+# ──────────────────────────────────────────────
+UNKNOWN_SIGHTING_GAP_MINUTES = 5   # Same unknown face within this gap = one sighting (one snapshot)
+UNKNOWN_CAPTURES_MAX_MB = 500      # Snapshot folder size limit
+UNKNOWN_RETENTION_DAYS = 30        # Delete snapshots older than this
+DISK_WARN_FREE_GB = 2.0            # Health warning below this much free disk
+TEMP_WARN_C = 75.0                 # Health warning at this CPU temperature

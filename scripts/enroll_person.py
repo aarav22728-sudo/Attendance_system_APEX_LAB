@@ -149,15 +149,15 @@ def enroll():
     for encoding in encodings:
         db.add_face_encoding(person_id, encoding)
 
-    print(f"\n  ╔══════════════════════════════════════╗")
-    print(f"  ║  Enrollment Complete                  ║")
-    print(f"  ╠══════════════════════════════════════╣")
+    print("\n  ╔══════════════════════════════════════╗")
+    print("  ║  Enrollment Complete                  ║")
+    print("  ╠══════════════════════════════════════╣")
     print(f"  ║  Name      : {name:<24s}║")
     print(f"  ║  Role      : {role:<24s}║")
     print(f"  ║  Person ID : {str(person_id):<24s}║")
     print(f"  ║  Encodings : {len(encodings):<24d}║")
     print(f"  ║  Photos    : {str(person_dir):<24s}║")
-    print(f"  ╚══════════════════════════════════════╝\n")
+    print("  ╚══════════════════════════════════════╝\n")
 
     logger.info(
         "Enrolled %s (id=%s, role=%s, %d encodings)",

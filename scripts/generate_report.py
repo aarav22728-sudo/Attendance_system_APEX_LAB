@@ -93,7 +93,7 @@ def main():
 
     try:
         filepath = generator.generate_report(start_str, end_str)
-        print(f"  ✓  Report generated successfully!")
+        print("  ✓  Report generated successfully!")
         print(f"  →  {filepath}\n")
         logger.info("Report generated: %s", filepath)
     except Exception:

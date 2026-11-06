@@ -5,7 +5,7 @@ Processes recognition results and logs check-in events.
 
 import sys
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import cv2
@@ -18,7 +18,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import config
 
 logger = logging.getLogger(__name__)
-
 
 class AttendanceManager:
     """Track attendance state and log check-in events via the database."""
@@ -38,7 +37,7 @@ class AttendanceManager:
 
         # Unknown-person tracking -------------------------------------------
         self._unknown_counter: int = 0
-
+        self._last_unknown_seen: float = 0.0
         logger.info("AttendanceManager initialised.")
 
     # ------------------------------------------------------------------
@@ -121,22 +120,24 @@ class AttendanceManager:
         }
 
         if self._unknown_counter >= config.CONSECUTIVE_UNKNOWN_THRESHOLD:
-            snapshot_path = self.capture_snapshot(frame, prefix="unknown")
-            result["snapshot"] = snapshot_path
-            try:
-                self._db.log_attendance(
-                    person_id=None,
-                    confidence=confidence,
-                    snapshot_path=snapshot_path,
-                    status="unknown",
-                )
-            except Exception:
-                logger.exception("Failed to log unknown face to database.")
-            logger.info(
-                "Unknown threshold reached (%d) — snapshot saved: %s",
-                self._unknown_counter, snapshot_path,
-            )
-            # Reset so we don't flood with snapshots
+            now_ts = now.timestamp()
+            # A new sighting starts only after the face has been absent for the gap period
+            gap_seconds = config.UNKNOWN_SIGHTING_GAP_MINUTES * 60
+            new_sighting = (now_ts - self._last_unknown_seen) > gap_seconds
+            self._last_unknown_seen = now_ts
+            if new_sighting:
+                snapshot_path = self.capture_snapshot(frame, prefix="unknown")
+                result["snapshot"] = snapshot_path
+                try:
+                    self._db.log_attendance(
+                        person_id=None,
+                        confidence=confidence,
+                        snapshot_path=snapshot_path,
+                        status="unknown",
+                    )
+                except Exception:
+                    logger.exception("Failed to log unknown face to database.")
+                logger.info("New unknown sighting — snapshot saved: %s", snapshot_path)
             self._unknown_counter = 0
 
         return result

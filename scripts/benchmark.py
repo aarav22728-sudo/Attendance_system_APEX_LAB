@@ -126,7 +126,7 @@ def _print_results(stats: dict):
     print(f"  │  Max detect time  : {stats['max_time_ms']:>9.2f} ms     │")
     print(f"  │  Avg faces/frame  : {stats['avg_faces']:>9.2f}         │")
     print(f"  │  Total faces found: {stats['total_faces']:>6d}            │")
-    print(f"  └─────────────────────────────────────┘")
+    print("  └─────────────────────────────────────┘")
 
 
 def main():

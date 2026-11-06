@@ -8,7 +8,6 @@ from pathlib import Path
 import customtkinter as ctk
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-import config
 
 # Color Palette — Glassmorphic Deep Slate & Neon Accents
 COLOR_BG_ROOT = "#0B0F19"         # Ultra-deep dark obsidian
@@ -31,10 +30,11 @@ COLOR_TEXT_MUTED = "#6B7280"      # Dim Gray
 
 # Fonts (Platform independent fallbacks)
 FONT_FAMILY = "Segoe UI" if sys.platform == "win32" else "DejaVu Sans"
-
 def get_font(size: int = 13, weight: str = "normal"):
-    """Return a styled CTkFont instance."""
-    return ctk.CTkFont(family=FONT_FAMILY, size=size, weight=weight)
+    """Return a styled CTkFont. weight: 'normal', 'bold', 'italic' or 'bold italic'."""
+    w = "bold" if "bold" in weight else "normal"
+    slant = "italic" if "italic" in weight else "roman"
+    return ctk.CTkFont(family=FONT_FAMILY, size=size, weight=w, slant=slant)
 
 def apply_global_theme():
     """Configure CustomTkinter global appearance defaults."""

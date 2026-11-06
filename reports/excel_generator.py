@@ -8,7 +8,7 @@ import logging
 from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from openpyxl import Workbook
 from openpyxl.styles import (
@@ -124,8 +124,11 @@ class WeeklyReportGenerator:
         ws = wb.active
         ws.title = "Summary"
 
-        # Header row
-        headers = ["Name", "Role"] + self.DAY_NAMES + ["Total", "%"]
+        # Date list for the report range
+        date_range = [start_dt + timedelta(days=i) for i in range((end_dt - start_dt).days + 1)]
+
+        # Header row: one column per date
+        headers = ["Name", "Role"] + [d.strftime("%a %d %b") for d in date_range] + ["Total", "%"]
         ws.append(headers)
         self._style_header(ws, 1)
 
@@ -139,11 +142,6 @@ class WeeklyReportGenerator:
             if key not in checkin_map or time_str < checkin_map[key]:
                 checkin_map[key] = time_str
 
-        # Date list for the week
-        date_range = [
-            start_dt + timedelta(days=i)
-            for i in range((end_dt - start_dt).days + 1)
-        ]
 
         for person in persons:
             pid = person.id
@@ -165,9 +163,9 @@ class WeeklyReportGenerator:
                 if key in checkin_map:
                     present_count += 1
                     t = checkin_map[key][:5]  # "HH:MM"
-                    row.append(f"✓ {t}")
+                    row.append(f"{t}")
                 else:
-                    row.append("✗")
+                    row.append("")
 
             row.append(present_count)
             pct = (present_count / work_day_count * 100) if work_day_count else 0
@@ -330,6 +328,7 @@ class WeeklyReportGenerator:
             pid = person.id
             consecutive = 0
             streak_start = None
+            last_absent_day = None
 
             for wd in work_dates:
                 key = (pid, wd.strftime("%Y-%m-%d"))
@@ -337,13 +336,13 @@ class WeeklyReportGenerator:
                     if consecutive == 0:
                         streak_start = wd
                     consecutive += 1
+                    last_absent_day = wd
                 else:
                     if consecutive >= config.ABSENT_FLAG_DAYS:
-                        streak_end = wd - timedelta(days=1)
                         ws.append([
                             person.name,
                             streak_start.strftime("%Y-%m-%d"),
-                            streak_end.strftime("%Y-%m-%d"),
+                            last_absent_day.strftime("%Y-%m-%d"),
                             consecutive,
                         ])
                         flagged = True
@@ -351,11 +350,11 @@ class WeeklyReportGenerator:
                     streak_start = None
 
             # Handle streak extending to end of range
-            if consecutive >= config.ABSENT_FLAG_DAYS and streak_start and work_dates:
+            if consecutive >= config.ABSENT_FLAG_DAYS and streak_start:
                 ws.append([
                     person.name,
                     streak_start.strftime("%Y-%m-%d"),
-                    work_dates[-1].strftime("%Y-%m-%d"),
+                    last_absent_day.strftime("%Y-%m-%d"),
                     consecutive,
                 ])
                 flagged = True
